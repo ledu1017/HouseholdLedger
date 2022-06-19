@@ -1,5 +1,4 @@
 #define _CRT_SECURE_NO_WARNINGS
-//#define leapyear(year) ((year)%4 == 0 && ((year)%100 != 0 || (year)%400 == 0))
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,7 +6,7 @@
 
 typedef struct ledgerData {
 	int date;    // 날짜
-	int food;    // 식료품
+	int food;    // 음식
 	int housing;    // 주거비
 	int clothes;    // 의류비
 	int medical;    // 의료비
@@ -26,7 +25,7 @@ typedef struct ledgerData {
 }LEDGERDATA;
 
 typedef struct householdbalance {
-	int food;    // 식료품
+	int food;    // 음식
 	int housing;    // 주거비
 	int clothes;    // 의류비
 	int medical;    // 의료비
@@ -48,12 +47,12 @@ typedef struct fixedex {
 	struct fixedex* next;
 }FIXEDEX;
 
+int basicyear[12] = { 31,28,31,30,31,30,31,31,30,31,30,31 };
 LEDGERDATA* openData(LEDGERDATA* list);
 HOUSEHOLDBALANCE* h_openData(HOUSEHOLDBALANCE* list);
 LEDGERDATA* insertList(LEDGERDATA* list, char* data);
 HOUSEHOLDBALANCE* h_insertList(HOUSEHOLDBALANCE* list, char* data);
 LEDGERDATA* reset(LEDGERDATA* list);
-int changeTime(char* data);
 void addData(LEDGERDATA* list);
 void writeText(LEDGERDATA* list);
 void search();
@@ -65,87 +64,62 @@ void menu1();
 void menu2();
 void menu3();
 void menu4();
-void menu5();
-void menu6();
+void gotoxy(int x, int y);
+int startDay(int year, int month);
 
 int main() {
 	LEDGERDATA* list = NULL;
 	HOUSEHOLDBALANCE* b_list = NULL;
 	FILE* fp = NULL;
 	int select1 = 0, select2 = 0, select3 = 0;
-
-	//start();
-	//system("pause");
 	b_list = h_openData(b_list);
+
+	system("title 가계부");    // cmd창 제목 수정
+	system("mode con: cols=155 lines=35");    // cmd창 크기 조절
+	start();
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 0);    //pause 입력시 출력되는문자 안보이게 검정
+	gotoxy(33, 24);
+	system("pause");
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
 	while (1) {
+		system("mode con: cols=155 lines=35");
 		list = NULL;    // 사용자가 내역 추가하면 바로 최신화 하기 위함
 		list = openData(list);
 		list = reset(list);
+
 		system("CLS");
 		menu1();
-		printf("메뉴 선택 : ");
-		scanf("%d", &select1);
-
-		while (1) {
-			system("CLS");
-			if (select1 == 1) {    // 가계부 메뉴
-				menu2();
-				printf("메뉴 선택 : ");
-				scanf("%d", &select2);
-				if (select2 == 1) {    // 내역 추가
-					addData(list);
-					system("pause");
-				}
-				else if (select2 == 2) {    // 조회
-					search();
-					system("pause");
-				}
-				else if (select2 == 3) {    // 고정지출 목록
-					fixedExpenditure();
-				}
-				else if (select2 == 4) {    // 달력
-					calendar(list);
-					system("pause");
-				}
-				else if (select2 == 5) {    // 소비 분석
-					consumeAnalysis(list, b_list);
-					system("pause");
-				}
-				else if (select2 == 6) break;    // 뒤로가기
-				else {
-					printf("잘못된 번호 입력\n");
-					system("pause");
-					break;
-				}
-			}
-			else if (select1 == 2) {    // 적금플랜 메뉴
-				menu3();
-				printf("메뉴 선택 : ");
-				scanf("%d", &select3);
-				if (select3 == 1) {    // 플랜 만들기
-					printf("111");
-					system("pause");
-				}
-				else if (select3 == 2) {    // 플랜 불러오기
-					printf("222");
-					system("pause");
-				}
-				else if (select3 == 3) break;    // 뒤로가기
-				else {
-					printf("잘못된 번호 입력\n");
-					system("pause");
-					break;
-				}
-			}
-			else if (select1 == 3) {    // 종료
-				printf("종료합니다.\n");
-				exit(1);
-			}
-			else {
-				printf("잘못된 번호입니다.\n");
-				system("pause");
-				break;
-			}
+		printf(" 메뉴 선택: ");
+		scanf("%d", &select2);
+		getchar();
+		if (select2 == 1) {    // 내역 추가
+			addData(list);
+			system("pause");
+		}
+		else if (select2 == 2) {    // 조회
+			search();
+			system("pause");
+		}
+		else if (select2 == 3) {    // 고정지출 목록
+			fixedExpenditure();
+			system("pause");
+		}
+		else if (select2 == 4) {    // 달력
+			calendar(list);
+			system("pause");
+		}
+		else if (select2 == 5) {    // 소비 분석
+			consumeAnalysis(list, b_list);
+			system("pause");
+		}
+		else if (select2 == 6) {
+			printf(" 종료합니다.");
+			break;
+		}
+		else {
+			printf(" 잘못된 번호 입력\n");
+			system("pause");
+			break;
 		}
 	}
 	return 0;
@@ -208,7 +182,7 @@ LEDGERDATA* insertList(LEDGERDATA* list, char* data) {
 			result = strtok(NULL, " :\t");
 			newnode->date = atoi(result);
 		}
-		else if (strcmp(result, "식료품") == 0) {
+		else if (strcmp(result, "음식") == 0) {
 			result = strtok(NULL, " :\t");
 			newnode->t_consume += atoi(result);
 			newnode->food = atoi(result);
@@ -299,7 +273,7 @@ HOUSEHOLDBALANCE* h_insertList(HOUSEHOLDBALANCE* list, char* data) {
 	newnode->t_consume = 0;
 	result = strtok(data, " :\t");
 	while (result != NULL) {
-		if (strcmp(result, "식료품") == 0) {
+		if (strcmp(result, "음식") == 0) {
 			result = strtok(NULL, " :\t");
 			newnode->t_consume += atoi(result);
 			newnode->food = atoi(result);
@@ -394,14 +368,6 @@ LEDGERDATA* reset(LEDGERDATA* list) {
 
 	return list;
 }
-int changeTime(char* data) {
-	int time, year, month, day;
-
-	sscanf(data, "%4d.%d.%d", &year, &month, &day);    // 문자열로 이루어진 시간 데이터에서 '.' 문자 없애고 나머지는 정수로 받기
-	time = year * 10000 + month * 100 + day;
-
-	return time;
-}
 
 void addData(LEDGERDATA* list) {
 	LEDGERDATA* head = NULL, * tail = NULL, * newnode = NULL;
@@ -413,7 +379,7 @@ void addData(LEDGERDATA* list) {
 		exit(0);
 	}
 
-	printf("날짜 입력 ex)20210506 : ");
+	printf(" 날짜를 입력하세요 [ ex)20210506 ] : ");
 	scanf("%d", &date);
 
 	while (head->next != NULL && head->date != date) {    // 입력한 날짜 찾기
@@ -424,27 +390,27 @@ void addData(LEDGERDATA* list) {
 
 	if (already == 1) {    // 해당하는 날짜에 해당하는 데이터가 존재한다면 head값 수정
 		while (1) {
-			menu4();    // 1.소득 2. 소비
-			printf("메뉴 선택 : ");
+			menu2();    // 1.소득 2. 소비
+			printf(" 메뉴 선택 : ");
 			scanf("%d", &select);
 
 			if (select == 1) {
-				menu5();    // 1. 월급 2. 기타
-				printf("메뉴 선택 : ");
+				menu3();    // 1. 월급 2. 기타
+				printf(" 메뉴 선택 : ");
 				scanf("%d", &select);
-				printf("금액을 입력하세요 : ");
+				printf(" 금액을 입력하세요 : ");
 				if (select == 1) scanf("%d", &head->salary);
 				else if (select == 2) scanf("%d", &head->in_etc);
 				else {
-					printf("잘못된 번호입니다.\n");
+					printf(" 잘못된 번호입니다.\n");
 					continue;    // 반복문 다시 실행
 				}
 			}
 			else if (select == 2) {
-				menu6();    // 소비 카테고리 11개
-				printf("메뉴 선택 : ");
+				menu4();    // 소비 카테고리 11개
+				printf(" 메뉴 선택 : ");
 				scanf("%d", &select);
-				printf("\n금액을 입력하세요 : ");
+				printf("\n 금액을 입력하세요 : ");
 				if (select == 1) scanf("%d", &head->food);
 				else if (select == 2) scanf("%d", &head->housing);
 				else if (select == 3) scanf("%d", &head->clothes);
@@ -468,12 +434,12 @@ void addData(LEDGERDATA* list) {
 		while (1) {
 			newnode->date = date;
 			newnode->next = NULL;
-			menu4();    // 1.소득 2. 소비
-			printf("메뉴 선택 : ");
+			menu2();    // 1.소득 2. 소비
+			printf(" 메뉴 선택 : ");
 			scanf("%d", &select);
 
 			if (select == 1) {
-				menu5();    // 1. 월급 2. 기타
+				menu3();    // 1. 월급 2. 기타
 				printf("메뉴 선택 : ");
 				scanf("%d", &select);
 				printf("금액을 입력하세요 : ");
@@ -485,7 +451,7 @@ void addData(LEDGERDATA* list) {
 				}
 			}
 			else if (select == 2) {
-				menu6();    // 소비 카테고리 11개
+				menu4();    // 소비 카테고리 11개
 				printf("메뉴 선택 : ");
 				scanf("%d", &select);
 				printf("\n금액을 입력하세요 : ");
@@ -517,7 +483,7 @@ void addData(LEDGERDATA* list) {
 void writeText(LEDGERDATA* list) {
 	FILE* fp = NULL;
 	char list_data[30] = { NULL };
-	char food[20] = " 식료품:";
+	char food[20] = " 음식:";
 	char housing[20] = " 주거비:";
 	char clothes[20] = " 의류비:";
 	char medical[20] = " 보건의료비:";
@@ -635,8 +601,8 @@ void writeText(LEDGERDATA* list) {
 
 void search() {
 	int date, check = 0;    // check는 끝까지 확인했는데 해당 날짜가 없을 때를 확인하기 위함
-	char data[200] = { NULL };
-	char print_data[200] = { NULL };
+	char data[200] = { NULL, };
+	char print_data[200] = { NULL, };
 	char* result;
 	FILE* fp;
 
@@ -645,7 +611,7 @@ void search() {
 		exit(0);
 	}
 
-	printf("\n날짜를 입력하세요 [ ex)20220601 ] : ");
+	printf(" 날짜를 입력하세요 [ ex)20220601 ] : ");
 	scanf("%d", &date);
 
 	while (!feof(fp)) {
@@ -654,11 +620,19 @@ void search() {
 		result = strtok(data, ":");
 		result = strtok(NULL, "\t");
 		if (date == atoi(result)) {    // 입력한 날짜와 분리한 날짜가 같다면
-			printf("\n%s\n", print_data);
+			printf("\n┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n");
+			printf("┃                                  ┃\n");
+			printf("┃  날짜: %s                 ┃\n", result);
+			printf("┃                                  ┃\n");
+			printf("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n");
+			result = strtok(NULL, "\t\0\n");
+			printf("\n %s\n", result);
+			result = strtok(NULL, "\n");
+			if (result != NULL) printf(" %s\n\n", result);
 			check = 1;
 		}
 	}
-	if (check == 0) printf("해당하는 날짜에 소득, 소비가 없었습니다.\n");
+	if (check == 0) printf(" 해당하는 날짜에 소득, 소비가 없었습니다.\n\n");
 
 	fclose(fp);
 }
@@ -668,47 +642,52 @@ void fixedExpenditure() {
 	FILE* fp = NULL;
 	char* result;
 	char select;
-	char category[30] = { NULL };
-	char data[100];
-	int amount = 0;
-
+	char category[40] = { NULL, };
+	char data[100] = { NULL, };
+	int amount = 0, chk = 0;
+	
 	if ((fp = fopen("fixedExpenditure.txt", "r")) == NULL) {
 		printf("fixedExpenditure file open error");
 		exit(0);
 	}
 
+	printf("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n");
+	printf("┃ 고정지출 목록                        ┃\n");
+	printf("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n");
+
 	while (!feof(fp)) {
 		head = list;
 		newnode = (FIXEDEX*)malloc(sizeof(FIXEDEX));
 		newnode->next = NULL;
-
 		fgets(data, sizeof(data), fp);
 		result = strtok(data, ":");
 		strcpy(newnode->category, result);
 		result = strtok(NULL, "\n");
 		newnode->amount = atoi(result);
 
-		printf("%s: %d\n", newnode->category, newnode->amount);
+		printf(" %s: %d\n", newnode->category, newnode->amount);
 		if (list == NULL) list = newnode;
 		else {
 			while (head->next != NULL) head = head->next;
 			head->next = newnode;
 		}
+		chk = 1;
 	}
 	fclose(fp);
+	if (chk == 0) printf(" 고정지출 목록이 없습니다.\n");
 
-	printf("\n목록을 수정하려면 1, 뒤로 가려면 아무거나 눌러주세요 : ");
-	getchar();
+	printf("\n 목록을 수정하려면 1, 뒤로 가려면 아무거나 입력 해주세요 : ");
 	scanf("%c", &select);
+	getchar();
 	tail = head = list;
 
 	if (select == '1') {
 		fp = fopen("fixedExpenditure.txt", "w");
 		newnode = (FIXEDEX*)malloc(sizeof(FIXEDEX));
 		newnode->next = NULL;
-		printf("추가 또는 수정할 이름을 선택하세요 [ ex) 월세 ] :");
-		scanf("%s", newnode->category);
-		printf("금액을 입력해주세요 ( 0원 입력시 해당 이름에 대한 내용을 삭제합니다.) : ");
+		printf(" 추가 또는 수정할 이름을 선택하세요 [ ex) 월세 ] :");
+		scanf("%[^\n]s", newnode->category);
+		printf("\n 금액을 입력해주세요 ( 0원 입력시 해당 이름에 대한 내용을 삭제합니다.) : ");
 		scanf("%d", &newnode->amount);
 
 		if (list == NULL) list = newnode;
@@ -722,71 +701,62 @@ void fixedExpenditure() {
 				head = head->next;
 				if (head == NULL) tail->next = newnode;
 			}
-			while (1) {
-				tail = list;
-				if (list->amount > 0) fprintf(fp, "%s: %d", list->category, list->amount);
-				list = list->next;
-				if (list == NULL) break;
-				if (tail->amount > 0) fprintf(fp, "\n");
-			}
 		}
+
+		while (list != NULL) {
+			if (list->amount > 0) fprintf(fp, "%s: %d", list->category, list->amount);
+			if (list->next != NULL && list->amount > 0) fprintf(fp, "\n");
+			list = list->next;
+		}
+		fclose(fp);
 	}
+	printf("\n");
+	free(newnode);
 }
 
 void calendar(LEDGERDATA* list) {
 	int year, month, k, q, t, sum = 0, chk = 0, count = 0, check = 0;    // k = q = t로 달의 시작이 무슨 요일인지 확인하기 위함
-	int day1 = 1, day2 = 1, i = 0;
-	int basicyear[12] = { 31,28,31,30,31,30,31,31,30,31,30,31 };
-	LEDGERDATA* data[31] = { NULL, };
-	printf("찾고싶은 연도와 달을 입력해주세요 [ex)2022 6]: ");
+	int day1 = 1, day2 = 1, z = 0;
+	LEDGERDATA* data[31] = { NULL, };    // 사용자가 원하는 달에대한 데이터 저장
+
+	printf(" 찾고싶은 연도와 달을 입력해주세요 [ex)2022 6]: ");
 	scanf("%d %d", &year, &month);
+	system("CLS");
 
 	while (list != NULL) {
 		if (list->date / 100 == year * 100 + month) {
-			data[i] = list;
-			i++;
+			data[z] = list;
+			z++;
 		}
 		list = list->next;
 	}
 
-	if ((year % 4 == 0) && !(year % 100 == 0) || (year % 400 == 0)) {    //윤년인지 확인
-		chk = 1;    // 윤년이라면 체크
-		basicyear[1]++;    // 윤년이라면 2월을 29일로 변환
-	}
-	else chk = 0;
+	t = q = k = startDay(year, month);    // 시작 요일 계산
 
-	sum = 365;
-	for (int i = 1; i < year; i++) {    // 시작부터 작년까지 몇년이었는지 계산
-		if ((i % 4 == 0) && !(i % 100 == 0) || (i % 400 == 0)) sum += 366;
-		else sum += 365;
-	}
-	for (int i = 0; i < month - 1; i++) sum += basicyear[i];
-
-	t = q = k = sum % 7;    // 시작 요일 계산
-
+	printf("\n\n\t\t\t\t\t\t\t%d년 %d월", year, month);
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 4);    // 일요일 빨간색
-	printf("\n\t  SUN\t\t");
+	printf("\n\n\n\n\t  SUN\t\t");
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 14);    // 평일 노란색
 	printf("  MON\t\t  TUS\t\t  WED\t\t  THU\t\t  FRI\t\t");
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 1);    // 토요일 파란색
 	printf("  SAT\n");
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);    // 표 흰색
-	printf("────────────────────────────────────────────────────────────────────────────────────────────────────────────────\n");
+	printf("  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────\n");
 
 	for (int j = 0; j < k; j++) printf("\t\t");    // 시작요일 맞추기
 	for (int i = 1; i <= basicyear[month - 1]; i++) {
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 14);
 		printf("\t   %d\t", i);    // 날짜 쓰는 과정
-		//printf("%d\n", count1);
 		count++;
 		if (k == 6) {    // 날짜를 1주일치 다 적었다면 줄바꾸고 소비 내역 쓰기
 			k = -1;
 			printf("\n");
 			count = 0;
 			for (int j = 0; j < q; j++) printf("\t\t");    // 시작 요일에 맞게 칸 맞추기
+			check = 0;
 			for (q; q <= 6; q++) {    // 일주일치 반복, 처음은 시작요일인 q에서 시작
 				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);    // 표 흰색
-				for (int z = 0; data[z] != NULL; z++) {    
+				for (int z = 0; data[z] != NULL; z++) {
 					chk = 0;
 					if (data[z]->date == (year * 100 + month) * 100 + day1) {    // 해당 날짜에 대한 데이터가 data배열에 존재하는지 확인
 						if (check == 1) printf("- %d\t", data[z]->t_consume);    // 칸 맞추기 위함
@@ -802,6 +772,7 @@ void calendar(LEDGERDATA* list) {
 				if (q == 6) {    // 1주일치 소비 다 적었다면 줄바꾸고 소득 내역 쓰기
 					printf("\n");
 					for (int j = 0; j < t; j++) printf("\t\t");    // 시작 요일에 맞게 칸 맞추기
+					check = 0;
 					for (t; t <= 6; t++) {
 						for (int z = 0; data[z] != NULL; z++) {
 							chk = 0;
@@ -867,13 +838,14 @@ void calendar(LEDGERDATA* list) {
 		else if (chk == 0 && check == 0) printf("\t+ 0\t");
 		day2++;    // data배열안에 사용자가 입력한 날짜에 맞는 날들이 다 있는지 확인하기 위함
 	}
+	basicyear[1] = 28;    //윤년으로 인해 값이 변했을 수 있기때문에
 	printf("\n\n\n\n");
 }
 
 void consumeAnalysis(LEDGERDATA* list, HOUSEHOLDBALANCE* b_list) {
-	int year, month;
+	int year, month, z = 0, x = 0, c = 0;
 	// 한달치 합산 퍼센트
-	double t_food = 0;    // 식료품
+	double t_food = 0;    // 음식
 	double t_housing = 0;    // 주거비
 	double t_clothes = 0;    // 의류비
 	double t_medical = 0;    // 의료비
@@ -887,46 +859,47 @@ void consumeAnalysis(LEDGERDATA* list, HOUSEHOLDBALANCE* b_list) {
 	double t_consume = 0;    // 총 소비금
 	int t_income = 0;    // 총 소득
 
+	LEDGERDATA* data[32] = { NULL, };    // 사용자가 원하는 달에대한 데이터 저장
 	int index[3][2] = { 0, };
 	int count = 1;    // 통계청 데이터 백분율로 나타낼 때 소득분위별 평균 구하기 위해 소득분위별 데이터 갯수 확인
 	double b_num[11] = { 0, };    // 통계청 데이터 백분율로 나타내기
 	double t_num[11] = { 0, };  // 사용자 데이터 백분율로 나타내기
 	int b_t_list[12] = { 0, };    // 통계청 한달치 데이터 카테고리별 금액 저장
 	int t_list[12] = { 0, };    // 사용자 한달치 데이터 카테고리별 총 금액 저장
-	char category[12][11] = { "식료품", "주거비", "의류비", "의료비","교통비", "문화생활비", "통신비", "주류,담배", "교육비", "가정용품", "기타소비" };
+	int w_list[6] = { 0, };    // 사용자가 주별로 사용한 금액
+	char category[12][11] = { "음식", "주거비", "의류비", "의료비","교통비", "문화생활비", "통신비", "주류,담배", "교육비", "가정용품", "기타소비" };
 
-	printf("찾고싶은 연도와 달을 입력해주세요 [ex)2022 6]: ");
+	printf(" 찾고싶은 연도와 달을 입력해주세요 [ex)2022 6]: ");
 	scanf("%d %d", &year, &month);
+	system("mode con: cols=190 lines=50");
 
-	while (1) {    // 입력한 연도와 달이 나올때까지 반복
+	while (list != NULL) {
 		if (list->date / 100 == year * 100 + month) {
-			break;
+			data[z] = list;
+			z++;
 		}
-		else if (list == NULL) {
-			printf("111\n");
-			break;
-		}
-		else list = list->next;
-	}
-
-	while (list->date / 100 == year * 100 + month) {
-		t_list[0] += list->food;
-		t_list[1] += list->housing;
-		t_list[2] += list->clothes;
-		t_list[3] += list->medical;
-		t_list[4] += list->transportaion;
-		t_list[5] += list->cultural;
-		t_list[6] += list->communication;
-		t_list[7] += list->alco_ciga;
-		t_list[8] += list->education;
-		t_list[9] += list->housewares;
-		t_list[10] += list->c_etc;
-		t_list[11] += list->t_consume;
-		if (list->t_income != 0) t_income = list->t_income;
 		list = list->next;
 	}
 
-	if (1000000 <= t_income && t_income < 2000000) {
+	z = 0;
+	while (data[z] != NULL) {
+		t_list[0] += data[z]->food;
+		t_list[1] += data[z]->housing;
+		t_list[2] += data[z]->clothes;
+		t_list[3] += data[z]->medical;
+		t_list[4] += data[z]->transportaion;
+		t_list[5] += data[z]->cultural;
+		t_list[6] += data[z]->communication;
+		t_list[7] += data[z]->alco_ciga;
+		t_list[8] += data[z]->education;
+		t_list[9] += data[z]->housewares;
+		t_list[10] += data[z]->c_etc;
+		t_list[11] += data[z]->t_consume;
+		if (data[z]->t_income != 0) t_income = data[z]->t_income;
+		z++;
+	}
+
+	if (1000000 <= t_income && t_income < 2000000) {    // 사용자의 소득구간과 통계청 소득구간별 데이터 비교하기 위함
 		while (b_list != NULL) {
 			if (1000000 < b_list->t_income && b_list->t_income < 2000000) {
 				b_t_list[0] += b_list->food / count;
@@ -986,9 +959,22 @@ void consumeAnalysis(LEDGERDATA* list, HOUSEHOLDBALANCE* b_list) {
 			b_list = b_list->next;
 		}
 	}
+
+	z = startDay(year, month);
+	while (data[c] != NULL) {    // z = 요일 판단 x = 몇주인지 판단 c = 몇일인지 판단
+		w_list[x] += data[c]->t_consume;
+		if (z == 6) {
+			z = -1;
+			x++;
+		}
+		z++;
+		c++;
+	}
+
 	printf("\n\n");
 	for (int i = 100; i > 0; i -= 5) {
-		if (i % 10 == 0) printf("%3d ┃", i);  //3d 자릿수 맞추기 최대 100% 세자리이므로 3d
+		if (i == 100) printf("%3d ┃\t\tRed = 평균 White = 사용자", i);
+		else if (i % 10 == 0) printf("%3d ┃", i);  //3d 자릿수 맞추기 최대 100% 세자리이므로 3d
 		else printf("    ┃");
 		for (int j = 0; j < 11; j++) {
 			printf("        ");
@@ -1037,7 +1023,7 @@ void consumeAnalysis(LEDGERDATA* list, HOUSEHOLDBALANCE* b_list) {
 	}
 	printf("\n");
 	printf("      ");
-	printf("       식료품       주거비       의류비       의료비       교통비     문화생활비     통신비     주류,담배      교육비      가정용품     기타소비");
+	printf("       음식       주거비       의류비       의료비       교통비     문화생활비     통신비     주류,담배      교육비      가정용품     기타소비");
 	printf("\n");
 	printf("==>     ");
 	for (int i = 0; i < 11; i++) {
@@ -1069,117 +1055,141 @@ void consumeAnalysis(LEDGERDATA* list, HOUSEHOLDBALANCE* b_list) {
 		}
 	}
 
-	printf("지출 카테고리 TOP3\n");
+	printf(" 지출 카테고리 TOP3\n\n");
 	for (int i = 0; i < 3; i++) {
 		if (t_num[index[i][0]] - b_num[index[i][0]] > 20) {
-			printf("%d위 %s %d\t동일 소득자 평균에 비해 %.1lf%% 더 많이 쓰고 있어요. 꼭 써야해서 쓴거죠? 그래도 줄여요 ^^\n\n", i + 1, category[index[i][0]], index[i][1], t_num[index[i][0]] - b_num[index[i][0]]);
+			printf(" %d위\t%s\t%d\t동일 소득자 평균에 비해 %.1lf%% 더 많이 쓰고 있어요. 꼭 써야해서 쓴거죠? 그래도 줄여요 ^^\n\n", i + 1, category[index[i][0]], index[i][1], t_num[index[i][0]] - b_num[index[i][0]]);
 		}
 		else if (t_num[index[i][0]] - b_num[index[i][0]] > 10) {
-			printf("%d위 %s %d\t동일 소득자 평균에 비해 %.1lf%% 더 많이 쓰고 있어요. 이건 조금 줄여야 겠어요\n\n", i + 1, category[index[i][0]], index[i][1], t_num[index[i][0]] - b_num[index[i][0]]);
+			printf(" %d위\t%s\t%d\t동일 소득자 평균에 비해 %.1lf%% 더 많이 쓰고 있어요. 이건 조금 줄여야 겠어요\n\n", i + 1, category[index[i][0]], index[i][1], t_num[index[i][0]] - b_num[index[i][0]]);
 		}
 		else if (t_num[index[i][0]] - b_num[index[i][0]] > 0) {
-			printf("%d위 %s %d\t동일 소득자 평균에 비해 %.1lf%% 더 많이 쓰고 있어요. 지금 적당하네요\n\n", i + 1, category[index[i][0]], index[i][1], t_num[index[i][0]] - b_num[index[i][0]]);
+			printf(" %d위\t%s\t%d\t동일 소득자 평균에 비해 %.1lf%% 더 많이 쓰고 있어요. 지금 적당하네요\n\n", i + 1, category[index[i][0]], index[i][1], t_num[index[i][0]] - b_num[index[i][0]]);
 		}
 		else if (t_num[index[i][0]] - b_num[index[i][0]] < 0) {
-			printf("%d위 %s %d\t동일 소득자 평균에 비해 %.1lf%% 적게 쓰고있어요. 좋네요\n\n", i + 1, category[index[i][0]], index[i][1], t_num[index[i][0]] - b_num[index[i][0]]);
+			printf(" %d위\t%s\t%d\t동일 소득자 평균에 비해 %.1lf%% 적게 쓰고있어요. 좋네요\n\n", i + 1, category[index[i][0]], index[i][1], t_num[index[i][0]] - b_num[index[i][0]]);
 		}
+	}
+	printf(" 주차별 소비\n\n");
+	for (int i = 0; i <= x; i++) {
+		printf(" %d월 %d주\t%d원\n\n", month, i + 1, w_list[i]);
 	}
 	return 0;
 }
 
 void start() {
-	printf("\n\n\n\n\t\t\t┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n");
-	printf("\t\t\t┃                                                                                                                                       ┃\n");
-	printf("\t\t\t┃                                                                                                                                       ┃\n");
-	printf("\t\t\t┃                                                                                                                                       ┃\n");
-	printf("\t\t\t┃                                                                           ┃                                                           ┃\n");
-	printf("\t\t\t┃                                          ┃                              ┃ ┃                                                           ┃\n");
-	printf("\t\t\t┃                         ━━━━━━━━━━━━┓    ┃          ━━━━━━━━━━━━┓       ┃ ┃          ┃                ┃                               ┃\n");
-	printf("\t\t\t┃                                     ┃    ┃                      ┃       ┃ ┃          ┃                ┃                               ┃\n");
-	printf("\t\t\t┃                                     ┃    ┃                      ┃ ━━━━━━┫ ┃          ┣━━━━━━━━━━━━━━━━┫                               ┃\n");
-	printf("\t\t\t┃                                     ┃    ┃                      ┃       ┃ ┃          ┃                ┃                               ┃\n");
-	printf("\t\t\t┃                                     ┃    ┣━━━━━━                ┃ ━━━━━━┫ ┃          ┗━━━━━━━━━━━━━━━━┛                               ┃\n");
-	printf("\t\t\t┃                                     ┃    ┃                      ┃       ┃ ┃                                                           ┃\n");
-	printf("\t\t\t┃                                     ┃    ┃                      ┃       ┃ ┃     ━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━                         ┃\n");
-	printf("\t\t\t┃                                          ┃                              ┃ ┃                  ┃                                        ┃\n");
-	printf("\t\t\t┃                                          ┃                              ┃ ┃                  ┃                                        ┃\n");
-	printf("\t\t\t┃                                          ┃                              ┃ ┃                  ┃                                        ┃\n");
-	printf("\t\t\t┃                                                                           ┃                  ┃                                        ┃\n");
-	printf("\t\t\t┃                                                                                                                                       ┃\n");
-	printf("\t\t\t┃                                                                                                                                       ┃\n");
-	printf("\t\t\t┃                                                                                                                                       ┃\n");
-	printf("\t\t\t┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n");
+	printf("\n\n\n\n\t\t┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n");
+	printf("\t\t┃                                                                                                                   ┃\n");
+	printf("\t\t┃                                ┃                                ┃                                                 ┃\n");
+	printf("\t\t┃               ━━━━━━━━━━━━┓    ┃              ━━━━━━━━━━━━┓   ┃ ┃               ┃               ┃                 ┃\n");
+	printf("\t\t┃                           ┃    ┃                          ┃   ┃ ┃               ┃               ┃                 ┃\n");
+	printf("\t\t┃                           ┃    ┃                          ┃ ━━┫ ┃               ┣━━━━━━━━━━━━━━━┨                 ┃\n");
+	printf("\t\t┃                           ┃    ┣━━━━━━                    ┃   ┃ ┃               ┃               ┃                 ┃\n");
+	printf("\t\t┃                           ┃    ┃                          ┃ ━━┫ ┃               ┗━━━━━━━━━━━━━━━┛                 ┃\n");
+	printf("\t\t┃                           ┃    ┃                          ┃   ┃ ┃          ━━━━━━━━━━━━━┰━━━━━━━━━━━━             ┃\n");
+	printf("\t\t┃                           ┃    ┃                          ┃   ┃ ┃                       ┃                         ┃\n");
+	printf("\t\t┃                                ┃                              ┃ ┃                       ┃                         ┃\n");
+	printf("\t\t┃                                ┃                                ┃                       ┃                         ┃\n");
+	printf("\t\t┃                                                                                                                   ┃\n");
+	printf("\t\t┃                                                                                                                   ┃\n");
+	printf("\t\t┃                                                                                                                   ┃\n");
+	printf("\t\t┃                                                                                                                   ┃\n");
+	printf("\t\t┃                                                                                                                   ┃\n");
+	printf("\t\t┃                                         계속하려면 아무키나 누르세요                                              ┃\n");
+	printf("\t\t┃                                                                                                                   ┃\n");
+	printf("\t\t┃                                                                                                                   ┃\n");
+	printf("\t\t┃                                                                                                                   ┃\n");
+	printf("\t\t┃                                                                                                                   ┃\n");
+	printf("\t\t┃                                                                                                                   ┃\n");
+	printf("\t\t┃                                                                                                                   ┃\n");
+	printf("\t\t┃                                                                                                                   ┃\n");
+	printf("\t\t┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n");
+
 }
 
 void menu1() {
-	printf("\n┌───────────── 메뉴────────────────┐\n");
-	printf("│                                  │\n");
-	printf("│ 1. 가계부                        │\n");
-	printf("│                                  │\n");
-	printf("│ 2. 적금 플랜                     │\n");
-	printf("│                                  │\n");
-	printf("│ 3. 종료                          │\n");
-	printf("│                                  │\n");
-	printf("└──────────────────────────────────┘\n");
+	printf("┏━━━━━━━━━━━━━━━ 메뉴━━━━━━━━━━━━━━┓\n");
+	printf("┃                                  ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃  1. 내역 추가 & 수정             ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃  2. 조회                         ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃  3. 고정 지출 목록               ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃  4. 캘린더                       ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃  5. 소비 분석                    ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃  6. 종료                         ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n");
 }
 
 void menu2() {
-	printf("┌───────────── 가계부──────────────┐\n");
-	printf("│                                  │\n");
-	printf("│ 1. 내역 추가 & 수정              │\n");
-	printf("│                                  │\n");
-	printf("│ 2. 조회                          │\n");
-	printf("│                                  │\n");
-	printf("│ 3. 고정 지출 목록                │\n");
-	printf("│                                  │\n");
-	printf("│ 4. 캘린더                        │\n");
-	printf("│                                  │\n");
-	printf("│ 5. 소비 분석                     │\n");
-	printf("│                                  │\n");
-	printf("│ 6. 뒤로가기                      │\n");
-	printf("│                                  │\n");
-	printf("└──────────────────────────────────┘\n");
+	printf("\n┏━━━━━━━━━━  내역 추가 ━━━━━━━━━━━━┓\n");
+	printf("┃                                  ┃\n");
+	printf("┃ 1. 소득                          ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃ 2. 소비                          ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n");
 }
 
 void menu3() {
-	printf("┌───────────── 적금 플랜────────────┐\n");
-	printf("│                                   │\n");
-	printf("│ 1. 새로운 플랜                    │\n");
-	printf("│                                   │\n");
-	printf("│ 2. 플랜 불러오기                  │\n");
-	printf("│                                   │\n");
-	printf("│ 3. 뒤로가기                       │\n");
-	printf("│                                   │\n");
-	printf("└───────────────────────────────────┘\n");
+	printf("\n┏━━━━━━━━━━ 소득 카테고리━━━━━━━━━━┓\n");
+	printf("┃                                  ┃\n");
+	printf("┃ 1. 월급                          ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┃ 2. 기타                          ┃\n");
+	printf("┃                                  ┃\n");
+	printf("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n");
 }
 
 void menu4() {
-	printf("┌──────────  내역 추가 ────────────┐\n");
-	printf("│                                  │\n");
-	printf("│ 1. 소득                          │\n");
-	printf("│                                  │\n");
-	printf("│ 2. 소비                          │\n");
-	printf("│                                  │\n");
-	printf("└──────────────────────────────────┘\n");
+	printf("\n┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 소비 카테고리━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n");
+	printf("┃                                                                              ┃\n");
+	printf("┃ 1. 음식          2. 주거비    3. 의류비       4. 보건 의료비    5. 교통비    ┃\n");
+	printf("┃                                                                              ┃\n");
+	printf("┃ 6. 문화생활비    7. 통신비    8. 주류, 담배   9. 교육비         10. 가정용품 ┃\n");
+	printf("┃                                                                              ┃\n");
+	printf("┃ 11. 기타                                                                     ┃\n");
+	printf("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n");
 }
 
-void menu5() {
-	printf("┌───────── 소득 카테고리───────────┐\n");
-	printf("│                                  │\n");
-	printf("│ 1. 월급                          │\n");
-	printf("│                                  │\n");
-	printf("│ 2. 기타                          │\n");
-	printf("│                                  │\n");
-	printf("└──────────────────────────────────┘\n");
+void gotoxy(int x, int y) {
+	COORD Pos;
+	Pos.X = x;
+	Pos.Y = y;
+	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Pos);
 }
 
-void menu6() {
-	printf("┌─────────────────────────────── 소비 카테고리─────────────────────────────────┐\n");
-	printf("│                                                                              │\n");
-	printf("│ 1. 식료품        2. 주거비    3. 의류비       4. 보건 의료비    5. 교통비    │\n");
-	printf("│                                                                              │\n");
-	printf("│ 6. 문화생활비    7. 통신비    8. 주류, 담배   9. 교육비         10. 가정용품 │\n");
-	printf("│                                                                              │\n");
-	printf("│ 11. 기타                                                                     │\n");
-	printf("└──────────────────────────────────────────────────────────────────────────────┘\n");
+int startDay(int year, int month) {
+	int chk = 0, sum = 0;
+	if ((year % 4 == 0) && !(year % 100 == 0) || (year % 400 == 0)) {    //윤년인지 확인
+		chk = 1;    // 윤년이라면 체크
+		basicyear[1]++;    // 윤년이라면 2월을 29일로 변환
+	}
+	else chk = 0;
+
+	sum = 365;
+	for (int i = 1; i < year; i++) {    // 시작부터 작년까지 몇년이었는지 계산
+		if ((i % 4 == 0) && !(i % 100 == 0) || (i % 400 == 0)) sum += 366;
+		else sum += 365;
+	}
+	for (int i = 0; i < month - 1; i++) sum += basicyear[i];
+
+	return sum % 7;
 }
